@@ -1,10 +1,14 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.16;
+pragma experimental ABIEncoderV2;
+
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
-import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./FlightSuretyData.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -25,6 +29,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner;          // Account used to deploy contract
+    FlightSuretyData contractData;
 
     struct Flight {
         bool isRegistered;
@@ -32,6 +37,13 @@ contract FlightSuretyApp {
         uint256 updatedTimestamp;        
         address airline;
     }
+
+
+     // list of all airlines
+    address[] private airlines = new address[](0); 
+
+    FlightSuretyData private flightSuretyData;
+
     mapping(bytes32 => Flight) private flights;
 
  
@@ -64,19 +76,26 @@ contract FlightSuretyApp {
     }
 
     /********************************************************************************************/
-    /*                                       CONSTRUCTOR                                        */
+    /*                                   CONSTRUCTOR                                            */
     /********************************************************************************************/
 
-    /**
-    * @dev Contract constructor
-    *
-    */
-    constructor
-                                (
-                                ) 
-                                public 
-    {
+    /// @dev Contract constructor
+    /// https://ethereum.stackexchange.com/questions/98453/visibility-for-constructor-is-ignored-if-you-want-the-contract-to-be-non-deploy
+    /// https://ethereum.stackexchange.com/questions/45972/ive-got-an-error-while-compiling-use-constructor-instead/45973
+    constructor(address payable addr, address payable first)  {
+        require(addr != address(0));
         contractOwner = msg.sender;
+        // initialize data contract
+        flightSuretyData = FlightSuretyData(addr);  
+        //list of airlines -> first one
+        airlines.push(first);
+    }
+
+    /********************************************************************************************/
+    /*                                           FALLBACK                                       */
+    /********************************************************************************************/
+
+    fallback() external {
     }
 
     /********************************************************************************************/
@@ -144,8 +163,8 @@ contract FlightSuretyApp {
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus
                         (
-                            address airline,
-                            string flight,
+                            address  airline,
+                            string memory flight,
                             uint256 timestamp                            
                         )
                         external
@@ -154,10 +173,9 @@ contract FlightSuretyApp {
 
         // Generate a unique key for storing the request
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
-        oracleResponses[key] = ResponseInfo({
-                                                requester: msg.sender,
-                                                isOpen: true
-                                            });
+        ResponseInfo storage flightResponse = oracleResponses[key];
+        flightResponse.isOpen = true;
+        flightResponse.requester = msg.sender;        
 
         emit OracleRequest(index, airline, flight, timestamp);
     } 
@@ -225,12 +243,10 @@ contract FlightSuretyApp {
                                     });
     }
 
-    function getMyIndexes
-                            (
-                            )
+    function getMyIndexes()
                             view
                             external
-                            returns(uint8[3])
+                            returns(uint8[3] memory)
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
@@ -248,7 +264,7 @@ contract FlightSuretyApp {
                         (
                             uint8 index,
                             address airline,
-                            string flight,
+                            string memory flight,
                             uint256 timestamp,
                             uint8 statusCode
                         )
@@ -278,7 +294,7 @@ contract FlightSuretyApp {
     function getFlightKey
                         (
                             address airline,
-                            string flight,
+                            string memory flight,
                             uint256 timestamp
                         )
                         pure
@@ -294,7 +310,7 @@ contract FlightSuretyApp {
                                 address account         
                             )
                             internal
-                            returns(uint8[3])
+                            returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
