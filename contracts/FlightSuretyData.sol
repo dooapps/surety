@@ -9,9 +9,21 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
+    struct Airline {
+        address addr;
+        bool isRegistered;
+        bool isFunded;
+    }
+
 
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+
+    mapping(address=> uint256) private authorizedAccounts;
+    mapping(address=>Airline) private airlines;    
+    address[] registeredAirlines = new address[](0);
+
+    uint256 private _balance = 0 ether;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -22,10 +34,18 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor()                              
+    constructor(address first)                              
     {
         contractOwner = msg.sender;
+        airlines[first] = Airline({
+                                    addr: first,
+                                    isRegistered: true,
+                                    isFunded: false
+                                });
+        registeredAirlines.push(first);
     }
+
+
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -54,10 +74,55 @@ contract FlightSuretyData {
         _;
     }
 
+    /**
+    * @dev Modifier that requires account to be authorized
+    */
+    modifier requireCallerAuthorized()
+    {
+        require(authorizedAccounts[msg.sender] == 1, "Caller is not authorized");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
+    /**
+    * @dev Checks to see if calling account is a airline
+    */
+    function isAirline
+                      (
+                          address account  
+                      )
+                      external
+                      view
+                      returns(bool)
+    {        
+        return airlines[account].isRegistered;
+    }
 
+    function isAirlineFunded
+                      (
+                         address account
+                      )
+                      external
+                      view
+                      returns(bool)
+    {        
+        return airlines[account].isFunded == true;
+    }
+    /** 
+    * @dev Authorizes account to make use of the contract    
+    */
+    function authorizeCaller
+                            (
+                                address account
+                            )
+                            external
+                            requireIsOperational
+                            requireContractOwner
+    {
+        authorizedAccounts[account] = 1;
+    }
     /**
     * @dev Get operating status of contract
     *
@@ -98,22 +163,48 @@ contract FlightSuretyData {
     */   
     function registerAirline
                             (   
+                                string calldata name,
+                                address account
                             )
                             external
-                            pure
+                            returns (bool)
     {
+        require(airlines[account].isRegistered == false, "Account has already been registered"); 
+                airlines[account] = Airline({
+                                        addr: account,
+                                        name: name,
+                                        isRegistered: true,
+                                        isFunded: false
+                                    });
+        registeredAirlines.push(account);
+        return true;      
+
     }
 
+    function getRegisteredAirlines() external view returns(address[] memory) {
+        return registeredAirlines;
+    }
+
+    function fundAirline
+                        (  
+                           address account 
+                        )
+                        external
+                        requireIsOperational
+    {
+        this.isAirline(account);            
+        airlines[account].isFunded = true;        
+        require(this.isAirlineFunded(account), "Data Airline not funded");
+    }
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
-    function buy
-                            (                             
-                            )
-                            external
-                            payable
+    function buy()
+                external
+                payable
+                requireIsOperational
     {
 
     }
@@ -125,7 +216,7 @@ contract FlightSuretyData {
                                 (
                                 )
                                 external
-                                pure
+                                requireIsOperational
     {
     }
     
@@ -138,7 +229,7 @@ contract FlightSuretyData {
                             (
                             )
                             external
-                            pure
+                            requireIsOperational
     {
     }
 
@@ -152,6 +243,7 @@ contract FlightSuretyData {
                             )
                             public
                             payable
+                            requireIsOperational
     {
     }
 
@@ -172,6 +264,13 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
+    fallback() 
+                            external 
+                            payable 
+    {
+        fund();
+    }
+
     receive() 
                             external 
                             payable 

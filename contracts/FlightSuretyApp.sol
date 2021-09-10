@@ -28,8 +28,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
-    address private contractOwner;          // Account used to deploy contract
-    FlightSuretyData contractData;
+    
 
     struct Flight {
         bool isRegistered;
@@ -39,6 +38,7 @@ contract FlightSuretyApp {
     }
 
 
+    address private contractOwner;          // Account used to deploy contract
      // list of all airlines
     address[] private airlines = new address[](0); 
 
@@ -62,7 +62,7 @@ contract FlightSuretyApp {
     modifier requireIsOperational() 
     {
          // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
+        require(isOperational(), "Contract is currently not operational");  
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -75,6 +75,13 @@ contract FlightSuretyApp {
         _;
     }
 
+
+    modifier requireAirlineIsFunded(address addr)
+    {
+        require(flightSuretyData.isAirlineFunded(addr), "Airline is not funded");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                   CONSTRUCTOR                                            */
     /********************************************************************************************/
@@ -82,13 +89,13 @@ contract FlightSuretyApp {
     /// @dev Contract constructor
     /// https://ethereum.stackexchange.com/questions/98453/visibility-for-constructor-is-ignored-if-you-want-the-contract-to-be-non-deploy
     /// https://ethereum.stackexchange.com/questions/45972/ive-got-an-error-while-compiling-use-constructor-instead/45973
-    constructor(address payable addr, address payable first)  {
+    constructor(address payable addr)  {
         require(addr != address(0));
         contractOwner = msg.sender;
         // initialize data contract
         flightSuretyData = FlightSuretyData(addr);  
         //list of airlines -> first one
-        airlines.push(first);
+        //airlines.push(first);
     }
 
     /********************************************************************************************/
@@ -231,6 +238,7 @@ contract FlightSuretyApp {
                             )
                             external
                             payable
+                            requireIsOperational
     {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
