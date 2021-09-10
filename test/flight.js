@@ -2,6 +2,7 @@
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 
+
 contract('Flight Surety Tests', async (accounts) => {
 
   var config;
@@ -75,6 +76,7 @@ contract('Flight Surety Tests', async (accounts) => {
     
     // ARRANGE
     let newAirline = accounts[2];
+    console.log(newAirline);
 
     // ACT
     try {

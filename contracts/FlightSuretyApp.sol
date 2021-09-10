@@ -90,12 +90,10 @@ contract FlightSuretyApp {
     /// https://ethereum.stackexchange.com/questions/98453/visibility-for-constructor-is-ignored-if-you-want-the-contract-to-be-non-deploy
     /// https://ethereum.stackexchange.com/questions/45972/ive-got-an-error-while-compiling-use-constructor-instead/45973
     constructor(address payable addr)  {
-        require(addr != address(0));
         contractOwner = msg.sender;
         // initialize data contract
         flightSuretyData = FlightSuretyData(addr);  
-        //list of airlines -> first one
-        //airlines.push(first);
+
     }
 
     /********************************************************************************************/

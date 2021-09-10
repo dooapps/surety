@@ -20,6 +20,7 @@ contract('Oracles', async (accounts) => {
   });
 
 
+  
   it('can register oracles', async () => {
     
     // ARRANGE

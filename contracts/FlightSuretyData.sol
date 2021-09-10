@@ -38,9 +38,10 @@ contract FlightSuretyData {
     constructor(address first)                              
     {
         contractOwner = msg.sender;
-        airlines[first] = Airline({
+        
+        airlines[msg.sender] = Airline({
                                     addr: first,
-                                    name: "Name",
+                                    name: "Name", //Todo: fix it 
                                     isRegistered: true,
                                     isFunded: false
                                 });
