@@ -11,6 +11,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
     struct Airline {
         address addr;
+        string name;
         bool isRegistered;
         bool isFunded;
     }
@@ -39,11 +40,13 @@ contract FlightSuretyData {
         contractOwner = msg.sender;
         airlines[first] = Airline({
                                     addr: first,
+                                    name: "Name",
                                     isRegistered: true,
                                     isFunded: false
                                 });
         registeredAirlines.push(first);
     }
+
 
 
 

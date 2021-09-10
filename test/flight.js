@@ -1,3 +1,4 @@
+
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 
@@ -73,16 +74,16 @@ contract('Flight Surety Tests', async (accounts) => {
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     
     // ARRANGE
-    let Airline = accounts[2];
+    let newAirline = accounts[2];
 
     // ACT
     try {
-        await config.flightSuretyApp.registerAirline(Airline);
+        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
     }
     catch(e) {
 
     }
-    let result = await config.flightSuretyData.isAirline.call(Airline); 
+    let result = await config.flightSuretyData.isAirline.call(newAirline); 
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");

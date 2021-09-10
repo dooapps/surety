@@ -1,53 +1,42 @@
 
 var Test = require('../config/testConfig.js');
-var BigNumber = require('bignumber.js');
+//var BigNumber = require('bignumber.js');
 
 contract('Oracles', async (accounts) => {
 
   const TEST_ORACLES_COUNT = 20;
-  const ORACLE_START_IDX = 10;
-
-  // Contract events
-  const STATUS_CODE_UNKNOWN = 0;
-  const STATUS_CODE_ON_TIME = 10;
-  const STATUS_CODE_LATE_AIRLINE = 20;
-  const STATUS_CODE_LATE_WEATHER = 30;
-  const STATUS_CODE_LATE_TECHNICAL = 40;
-  const STATUS_CODE_LATE_OTHER = 50;
-
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
-    app = config.flightSuretyApp;
-    data = config.flightSuretyData;
-    flights = config.flights;
-    oracles = config.oracles;
-    MIN_ORACLE_RESPONSES = 3;
 
-    airline1 = config.airline1;
-
-    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
-    await app.registerAirline('Airline 1', config.airline1, {from: config.owner});
-    await data.authorizeCaller(airline1, {from: config.owner});    
+    // Watch contract events
+    const STATUS_CODE_UNKNOWN = 0;
+    const STATUS_CODE_ON_TIME = 10;
+    const STATUS_CODE_LATE_AIRLINE = 20;
+    const STATUS_CODE_LATE_WEATHER = 30;
+    const STATUS_CODE_LATE_TECHNICAL = 40;
+    const STATUS_CODE_LATE_OTHER = 50;
 
   });
 
 
   it('can register oracles', async () => {
+    
     // ARRANGE
-    let fee = await app.REGISTRATION_FEE.call();
+    let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
 
     // ACT
-    for (let a = 0; a < TEST_ORACLES_COUNT; a++) {
-      await app.registerOracle({ from: accounts[ORACLE_START_IDX + a], value: fee });
-      let result = await app.getMyIndexes.call({ from: accounts[ORACLE_START_IDX + a] });
-      console.log(`\tOracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
+    for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
+      await config.flightSuretyApp.registerOracle({ from: accounts[a], value: fee });
+      let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+      console.log(`Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
     }
   });
 
   it('can request flight status', async () => {
     
-    let flight = 'NUM13'; 
+    // ARRANGE
+    let flight = 'ND1309'; // Course number
     let timestamp = Math.floor(Date.now() / 1000);
 
     // Submit a request for oracles to get status information for a flight
